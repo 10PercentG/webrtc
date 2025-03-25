@@ -1,4 +1,4 @@
-const socket = new WebSocket('ws://localhost:3000');
+const socket = new WebSocket('ws://webrtc-jxyz.onrender.com:3000');
 let localStream;
 let peerConnection;
 let isCaller = true;
