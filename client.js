@@ -1,4 +1,4 @@
-const socket = new WebSocket('wss://webrtc-jxyz.onrender.com');
+const socket = new WebSocket('wss://webrtc-jxyz.onrender.com'); // ✅ Use WSS
 let localStream;
 let peerConnection;
 let isCaller = true;
@@ -6,13 +6,14 @@ let isCaller = true;
 const config = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
 };
-//test
+
 socket.onopen = async () => {
-  console.log('✅ WebSocket connected');
+  console.log('✅ WebSocket connected!!!!!!!!');
+
   await setupLocalStream();
   createPeerConnection();
 
-  // Delay a bit to give chance for offer to arrive first (race condition fix)
+  // Delay to give time for peer to connect
   setTimeout(async () => {
     if (isCaller) {
       const offer = await peerConnection.createOffer();
@@ -36,7 +37,10 @@ socket.onmessage = async (message) => {
   console.log('📩 Message received:', data);
 
   if (data.offer) {
-    isCaller = false; // This user is the receiver
+    isCaller = false;
+    await setupLocalStream();
+    createPeerConnection();
+
     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
@@ -52,6 +56,8 @@ socket.onmessage = async (message) => {
 };
 
 async function setupLocalStream() {
+  if (localStream) return; // Prevent re-calling
+
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     console.log('🎙️ Microphone access granted');
@@ -65,6 +71,7 @@ function createPeerConnection() {
 
   localStream.getTracks().forEach(track => {
     peerConnection.addTrack(track, localStream);
+    console.log('🎚️ Local track added:', track.kind);
   });
 
   peerConnection.ontrack = (event) => {
@@ -72,7 +79,7 @@ function createPeerConnection() {
     const remoteAudio = new Audio();
     remoteAudio.srcObject = event.streams[0];
     remoteAudio.autoplay = true;
-    remoteAudio.play().catch(err => console.error('🔇 Audio playback error:', err));
+    remoteAudio.play().catch(err => console.error('🔇 Playback error:', err));
   };
 
   peerConnection.onicecandidate = (event) => {
